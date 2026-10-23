@@ -158,30 +158,12 @@ const STEPS=[
   ['Step 4 · 润色定稿','🤖 Hermes','删车轱辘话、改口语、查错字、核时长']
 ];
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-// 网页→Hermes 通道（按顺序降级）：①App内直发 ②公网直连 relay（POST+轮询回执，不经飞书）③复制+跳飞书
-const FEISHU_APPLINK='https://applink.feishu.cn/client/chat/open?openChatId=oc_c276467b6605b359571c9ff0c1803a13';
-// ponytail 上限：RELAY 是 trycloudflare 临时隧道 URL，relay/cloudflared 重启后会变，变了要来这里更新；mini常驻后换命名隧道+launchd 自启
-const RELAY='https://intimate-providence-gibraltar-unlike.trycloudflare.com';
-function fallbackFeishu(text){
-  navigator.clipboard.writeText(text).then(()=>{
-    toast('直连失败→已复制并打开飞书，粘贴发送');
-    window.open(FEISHU_APPLINK,'_blank');
-  }).catch(()=>toast('复制失败，手动复制发到飞书工作台会话'));
-}
-function toHermes(text,tries){
+// 通道状态（2026-10-23 暂停直连）：工作台改为「只看不发」，提交按钮=复制文本，粘贴到 Hermes 聊天框发我。
+// 恢复直连：重启 relay+cloudflared（见 creative-workbench skill）并把下面按钮改回 toHermes。
+function toHermes(text){
   if(window.hermes&&window.hermes.send){window.hermes.send(text);toast('已直接发送给 Hermes');return;}
-  tries=tries||0;
-  toast(tries?('上个任务还在处理，'+45+'秒后自动重试（第'+tries+'次）'):'已提交，Hermes 处理中…（通常几十秒）');
-  fetch(RELAY+'/submit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({payload:text})})
-    .then(r=>r.json()).then(d=>{
-      if(!d.job&&/稍等|忙/.test(String(d.error||''))&&tries<4){setTimeout(()=>toHermes(text,tries+1),45000);return;}
-      if(!d.job){fallbackFeishu(text);return;}
-      const iv=setInterval(()=>fetch(RELAY+'/status?id='+d.job).then(r=>r.json()).then(s=>{
-        if(s.status==='done'||s.status==='failed'){clearInterval(iv);
-          toast((s.status==='done'?'✅ ':'❌ ')+String(s.out||'').split('\n')[0].slice(0,140)+'（刷新页面看最新状态）');}
-        else toast('Hermes 处理中…');
-      }).catch(()=>{clearInterval(iv);fallbackFeishu(text);}),3000);
-    }).catch(()=>fallbackFeishu(text));
+  navigator.clipboard.writeText(text).then(()=>toast('已复制 → 粘贴到 Hermes 聊天框发给我（网页直连已暂停）'))
+    .catch(()=>toast('复制失败，手动复制后发到 Hermes 聊天'));
 }
 const LB={todo:'未开始',doing:'进行中',done:'✅ 完成'};
 const today=()=>new Date().toISOString().slice(0,10);
