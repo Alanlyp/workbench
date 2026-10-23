@@ -61,6 +61,10 @@
   .desc{font-size:13px;color:#444;margin-top:5px}
   .acts{margin-top:9px}
   .foot{font-size:12px;color:#999;margin-top:16px;border-top:1px solid #e4e4e9;padding-top:12px}
+  .dtitle{font-size:13px;font-weight:600;margin:2px 0 6px;color:#17171a}
+  #pdesc{width:100%;min-height:130px;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px;line-height:1.6;font-family:inherit;resize:vertical}
+  #pdesc:focus{outline:none;border-color:#2f6fed}
+  .dhint{font-size:12px;color:#6b7280;margin-top:6px}
   .toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%);background:#17171a;color:#fff;font-size:13px;padding:8px 18px;border-radius:8px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:92%;text-align:center}
   .toast.show{opacity:1}
   /* 手机端 H5：放在样式表末尾保证覆盖桌面规则 */
@@ -78,6 +82,7 @@
     .step{padding:12px 13px}
     .no{font-size:15px}
     .desc,.out,.links a,.now{font-size:14px}
+    #pdesc{font-size:16px;min-height:150px}
     .back{font-size:15px;padding:8px 0;display:block}
   }
 </style>
@@ -87,9 +92,9 @@
   <h1 id="apph">🗂 创作工作台</h1>
   <div class="sub">四步法：AI调研 → 搭框架 → 注入故事(你) → 润色 · 每步完成后 Hermes 更新本页，浏览器 ⌘R 刷新</div>
 
-  <div id="view-home">
-    <div id="banner"></div>
+  <div id="banner"></div>
 
+  <div id="view-home">
     <div class="grid">
       <div class="card">
         <h3>▶ 开始创作</h3>
@@ -176,7 +181,22 @@ function sendDraft(){
   const payload='工作台同步：'+JSON.stringify({materials:mats(),projects:projs(),trash:trash()});
   if(window.hermes&&window.hermes.send){window.hermes.send(payload);toast('已发送给 Hermes');}
   else navigator.clipboard.writeText(payload).then(()=>toast('已复制，马上粘贴发给 Hermes')).catch(()=>toast('复制失败，请手动操作'));
-  D.sent=true;localStorage.setItem('wt-draft',JSON.stringify(D));renderHome();
+  D.sent=true;localStorage.setItem('wt-draft',JSON.stringify(D));route();
+}
+
+// ---- 同步横幅（首页/项目页共用，容器在页面顶部）----
+function renderBanner(){
+  const e=document.getElementById('banner');
+  if(!e)return;
+  e.innerHTML=(D&&D.n>0)
+    ?`<div class="banner">📝 有 ${D.n} 项修改${D.sent?'（已复制，记得粘贴发送）':'待同步'}`
+      +(D.sent?'<button class="mini" id="bs2">📤 再次同步</button>':'<button class="mini send" id="bs">📤 同步给 Hermes</button><button class="mini del" id="bd">放弃修改</button>')+'</div>'
+    :'';
+  if(D&&D.n>0){
+    if(D.sent)document.getElementById('bs2').onclick=sendDraft;
+    else{document.getElementById('bs').onclick=sendDraft;
+      document.getElementById('bd').onclick=()=>{if(confirm('放弃全部修改，恢复线上版本？')){localStorage.removeItem('wt-draft');location.reload();}};}
+  }
 }
 
 // ---- 首页 ----
@@ -193,15 +213,7 @@ function renderHome(){
   const eb=document.getElementById('editbtn');
   if(eb){eb.textContent=editing?'✔ 完成编辑':'✎ 编辑';eb.onclick=()=>{editing=!editing;renderHome();};}
   document.getElementById('matadd').style.display=editing?'':'none';
-  document.getElementById('banner').innerHTML=(D&&D.n>0)
-    ?`<div class="banner">📝 有 ${D.n} 项修改${D.sent?'（已复制，记得粘贴发送）':'待同步'}`
-      +(D.sent?'<button class="mini" id="bs2">📤 再次同步</button>':'<button class="mini send" id="bs">📤 同步给 Hermes</button><button class="mini del" id="bd">放弃修改</button>')+'</div>'
-    :'';
-  if(D&&D.n>0){
-    if(D.sent)document.getElementById('bs2').onclick=sendDraft;
-    else{document.getElementById('bs').onclick=sendDraft;
-      document.getElementById('bd').onclick=()=>{if(confirm('放弃全部修改，恢复线上版本？')){localStorage.removeItem('wt-draft');location.reload();}};}
-  }
+  renderBanner();
   document.getElementById('mat').innerHTML=(M.length?M.map((m,i)=>
     editing
     ?`<div class="matrow"><a href="${esc(m[1])}" onclick="return false" style="color:#6b7280">${esc(m[0])}</a><button class="mini del" data-mdel="${i}">✕</button></div>`
@@ -255,7 +267,7 @@ document.getElementById('nb').onclick=()=>{
   const t=document.getElementById('nt').value.trim();
   if(!t){toast('先填个创意名字');return;}
   ensureDraft();
-  projs().unshift({id:'p'+Date.now().toString(36),title:t,date:today(),status:'script',stage:0,extra:[]});
+  projs().unshift({id:'p'+Date.now().toString(36),title:t,date:today(),status:'script',stage:0,desc:'',extra:[]});
   document.getElementById('nt').value='';
   saveDraft();renderHome();toast('已创建，记得顶部「同步」发给 Hermes');
 };
@@ -268,15 +280,23 @@ document.getElementById('mb').onclick=()=>{
 };
 
 // ---- 项目进度页 ----
+function refreshGate(id){const p=projs().find(x=>x.id===id);if(!p)return;
+  const has=!!(p.desc&&String(p.desc).trim());
+  const g0=document.getElementById('g0'),g1=document.getElementById('g1');
+  if(g0)g0.style.display=has?'none':'';
+  if(g1)g1.style.display=has?'':'none';}
 function renderProj(id){
   const p=projs().find(x=>x.id===id);if(!p){location.hash='';return;}
+  renderBanner();
   const doneN=Math.max(Math.min(p.stage-1,4),0),pct=Math.min(p.stage-1,4)/4*100;
   const steps=STEPS.map((s,i)=>{
     const n=i+1;
     const st=p.stage>=5?'done':p.stage===0?'todo':n<p.stage?'done':n===p.stage?'doing':'todo';
     let acts='';
     if(st==='doing')acts=`<button data-c="${esc('工作台：《'+p.title+'》完成 Step '+n+'，推进下一步')}">✅ 完成这步，进入 Step ${n+1}</button>`;
-    if(st==='todo'&&n===1&&p.stage===0)acts=`<button data-c="${esc('工作台：《'+p.title+'》开始 Step 1，做用户调研和钩子池')}">▶ 开始 Step 1</button>`;
+    if(st==='todo'&&n===1&&p.stage===0)
+      acts=`<div id="g0" class="empty">✏️ 先在上方「选题描述」写下你的想法，保存并同步后才能开始 Step 1</div>
+        <div id="g1" style="display:none"><button data-c="${esc('工作台：《'+p.title+'》开始 Step 1，做用户调研和钩子池')}">▶ 开始 Step 1</button></div>`;
     if(st==='todo'&&p.stage>0&&n===p.stage+1)acts=`<button class="ghost" data-c="${esc('工作台：《'+p.title+'》开始 Step '+n)}">▶ 开始 Step ${n}</button>`;
     return `<div class="step ${st==='done'?'done':st==='doing'?'doing':''}">
       <div class="head"><span class="no">${s[0]}</span><span class="who">${s[1]}</span><span class="st">${LB[st]}</span></div>
@@ -289,10 +309,17 @@ function renderProj(id){
   document.getElementById('view-proj').innerHTML=`
     <span class="back" onclick="location.hash=''">← 返回首页</span>
     <div class="now">📍 <b>${esc(p.title)}</b> — ${STAGELB(p.stage)}${p.status==='shot'?'（已拍）':''}</div>
-    <div class="bar"><i style="width:${pct}%"></i></div>
+    <div class="dtitle">✏️ 选题描述 · 你的想法（必填）</div>
+    <textarea id="pdesc" placeholder="这个选题讲什么？为什么现在做？给谁看？你有什么独特角度、亲历故事或亲眼所见的素材？写得越具体，调研和框架越准……">${esc(p.desc||'')}</textarea>
+    <div class="dhint">写完<b>点框外或收起键盘</b>自动保存 → 页面顶部「📤 同步给 Hermes」发给我 → 解锁 Step 1</div>
+    <div class="bar" style="margin-top:14px"><i style="width:${pct}%"></i></div>
     <div class="bartxt">进度 ${doneN}/4${links?` ｜ ${links}`:''}</div>
     ${steps}${shotBtn}
     <div class="foot">完成按钮把指令复制到剪贴板，粘贴回 Hermes 发送；Hermes 更新本页后 ⌘R 刷新。</div>`;
+  document.getElementById('pdesc').onchange=e=>{ensureDraft();
+    const pp=projs().find(x=>x.id===id);
+    if(pp){pp.desc=e.target.value;saveDraft();refreshGate(id);renderBanner();toast('描述已保存，记得顶部「📤 同步」');}};
+  refreshGate(id);
   document.getElementById('view-proj').querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{
     if(window.hermes&&window.hermes.send){window.hermes.send(b.dataset.c);return;}
     navigator.clipboard.writeText(b.dataset.c).then(()=>toast('已复制，粘贴回 Hermes 聊天框发送'));});
