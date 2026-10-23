@@ -157,6 +157,15 @@ const STEPS=[
   ['Step 4 · 润色定稿','🤖 Hermes','删车轱辘话、改口语、查错字、核时长']
 ];
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+// 网页→Hermes 通道：App内直发；公网浏览器=复制+跳飞书机器人会话（Hermes定时查收）
+const FEISHU_APPLINK='https://applink.feishu.cn/client/chat/open?openChatId=oc_c276467b6605b359571c9ff0c1803a13';
+function toHermes(text){
+  if(window.hermes&&window.hermes.send){window.hermes.send(text);toast('已直接发送给 Hermes');return;}
+  navigator.clipboard.writeText(text).then(()=>{
+    toast('已复制，并打开飞书 → 粘贴发给「刘奕平的CLI」');
+    window.open(FEISHU_APPLINK,'_blank');
+  }).catch(()=>toast('复制失败，手动复制后发到飞书工作台会话'));
+}
 const LB={todo:'未开始',doing:'进行中',done:'✅ 完成'};
 const today=()=>new Date().toISOString().slice(0,10);
 function toast(t){const e=document.getElementById('toast');e.textContent=t;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),2200);}
@@ -179,8 +188,7 @@ function saveDraft(){D={n:(D?D.n:0)+1,baseline:D?D.baseline:REV,sent:false,mater
   localStorage.setItem('wt-draft',JSON.stringify(D));}
 function sendDraft(prefix){
   const payload=(prefix||'工作台同步：')+JSON.stringify({materials:mats(),projects:projs(),trash:trash()});
-  if(window.hermes&&window.hermes.send){window.hermes.send(payload);toast('已发送给 Hermes');}
-  else navigator.clipboard.writeText(payload).then(()=>toast('已复制，马上粘贴发给 Hermes')).catch(()=>toast('复制失败，请手动操作'));
+  toHermes(payload);
   D.sent=true;localStorage.setItem('wt-draft',JSON.stringify(D));route();
 }
 
@@ -331,12 +339,9 @@ function renderProj(id){
     const v=document.getElementById('pdesc').value;
     if(!v.trim()){toast('先写想法再提交');return;}
     ensureDraft();pp.desc=v;saveDraft();
-    sendDraft('工作台：《'+pp.title+'》提交选题描述｜');
-    toast('已提交，等 Hermes 回复「收到」后解锁 Step 1');};
+    sendDraft('工作台：《'+pp.title+'》提交选题描述｜');};
   refreshGate(id);
-  document.getElementById('view-proj').querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{
-    if(window.hermes&&window.hermes.send){window.hermes.send(b.dataset.c);return;}
-    navigator.clipboard.writeText(b.dataset.c).then(()=>toast('已复制，粘贴回 Hermes 聊天框发送'));});
+  document.getElementById('view-proj').querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>toHermes(b.dataset.c));
 }
 function route(){
   const h=location.hash;
