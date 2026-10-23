@@ -28,6 +28,10 @@
   .mini:hover{background:#f0f0f2;color:#17171a}
   .mini.del{color:#dc2626;border-color:#fecaca}
   .banner .send{background:#2f6fed;color:#fff;border-color:#2f6fed;padding:7px 14px;font-size:13px;width:auto}
+  .dot{display:inline-block;width:12px;height:12px;border-radius:50%;flex:none}
+  .dot.g{background:#22c55e}.dot.b{background:#3b82f6}.dot.y{background:#eab308}
+  .mini.fg{padding:5px 7px}
+  .mini.fg.on{border-color:#17171a;box-shadow:inset 0 0 0 1px #17171a}
   .links a{display:block;font-size:13px;color:#2f6fed;text-decoration:none;padding:3px 0}
   .links a:hover{text-decoration:underline}
   .matrow{display:flex;gap:8px;align-items:center;justify-content:space-between}
@@ -36,7 +40,8 @@
   .plist a.item:hover{border-color:#2f6fed}
   .plist .t{font-size:14px;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis}
   .plist .m{font-size:12px;color:#6b7280;margin-left:auto;white-space:nowrap}
-  .rowacts{display:flex;gap:6px;margin:-2px 0 8px;flex-wrap:wrap}
+  .rowacts{display:flex;gap:6px;margin:-2px 0 8px;flex-wrap:wrap;align-items:center}
+  .rowacts .lbl{font-size:12px;color:#6b7280}
   .empty{font-size:13px;color:#999;padding:6px 2px}
   .banner{border:1px solid #f59e0b;background:#fffbeb;border-radius:10px;padding:10px 12px;font-size:13px;margin-bottom:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
   .now{border:1px solid #2f6fed;background:#eef4ff;border-radius:10px;padding:10px 14px;font-size:14px;margin-bottom:14px}
@@ -114,6 +119,11 @@
       <div class="plist" id="l2"></div>
     </div>
 
+    <div class="card">
+      <h3>🗑 选题垃圾箱<span class="cnt" id="c3"></span><span id="tbw"></span></h3>
+      <div class="plist" id="l3"></div>
+    </div>
+
     <div class="foot" id="homefoot"></div>
   </div>
 
@@ -121,10 +131,10 @@
 </div>
 <div class="toast" id="toast"></div>
 <script>
-// ponytail: 线上真身=本文件 REV/MATERIALS/PROJECTS；页面编辑存 localStorage 草稿，
+// ponytail: 线上真身=本文件 REV/MATERIALS/PROJECTS/TRASH；页面编辑存 localStorage 草稿，
 // 点「同步」把 JSON 发回 Hermes → Hermes 写入源文件、REV+1、push。无后端，够用到需要多端直写为止。
 // XSS说明：渲染数据统一过 esc() 转义；banner/foot 的 innerHTML 只拼常量与数字（D.n 强制转 Number）。
-const REV=1;
+const REV=2;
 const MATERIALS=[
   ['📁 口播稿总目录','file:///Users/liuyiping/Desktop/Alan-Database/口播稿/'],
   ['📁 转录原稿','file:///Users/liuyiping/Desktop/opencode/转录原稿/'],
@@ -135,6 +145,7 @@ const PROJECTS=[
    extra:[['素材库(车墩v1)','file:///Users/liuyiping/Desktop/Alan-Database/口播稿/07-城市烟火气/2026-10-23-车墩-白天的安静与夜晚的烟火气.md'],
           ['参考视频拆解','file:///Users/liuyiping/Desktop/opencode/转录原稿/2026-10-23-BV1z3SiBsEig-AI爆款文案四步法-转录与拆解.md']]}
 ];
+const TRASH=[];
 const STEPS=[
   ['Step 1 · AI调研','🤖 Hermes','痛点、钩子池、选题池≥10个'],
   ['Step 2 · 搭框架','🤖 Hermes','Story框架分段大纲，段落级、不写正文'],
@@ -146,22 +157,24 @@ const LB={todo:'未开始',doing:'进行中',done:'✅ 完成'};
 const today=()=>new Date().toISOString().slice(0,10);
 function toast(t){const e=document.getElementById('toast');e.textContent=t;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),2200);}
 const STAGELB=s=>s===0?'未启动':s>=5?'文稿定稿 ✅':'Step '+s+' 进行中';
+const flagDot=p=>p.flag?`<span class="dot ${p.flag==='g'?'g':p.flag==='b'?'b':'y'}"></span>`:'';
 
 // ---- 用户端草稿（localStorage）----
 let D=null;
 try{D=JSON.parse(localStorage.getItem('wt-draft')||'null');
-  if(D){D.n=(+D.n)||0;
+  if(D){D.n=(+D.n)||0;if(!Array.isArray(D.trash))D.trash=[];
     if(D.sent&&D.baseline<REV){localStorage.removeItem('wt-draft');D=null;}}}catch(e){D=null;}
 let editing=false;
 const mats=()=>D?D.materials:MATERIALS;
 const projs=()=>D?D.projects:PROJECTS;
+const trash=()=>D?D.trash:TRASH;
 function ensureDraft(){if(!D){D={n:0,baseline:REV,sent:false,
-  materials:JSON.parse(JSON.stringify(MATERIALS)),projects:JSON.parse(JSON.stringify(PROJECTS))};
+  materials:JSON.parse(JSON.stringify(MATERIALS)),projects:JSON.parse(JSON.stringify(PROJECTS)),trash:JSON.parse(JSON.stringify(TRASH))};
   localStorage.setItem('wt-draft',JSON.stringify(D));}}
-function saveDraft(){D={n:(D?D.n:0)+1,baseline:D?D.baseline:REV,sent:false,materials:mats(),projects:projs()};
+function saveDraft(){D={n:(D?D.n:0)+1,baseline:D?D.baseline:REV,sent:false,materials:mats(),projects:projs(),trash:trash()};
   localStorage.setItem('wt-draft',JSON.stringify(D));}
 function sendDraft(){
-  const payload='工作台同步：'+JSON.stringify({materials:mats(),projects:projs()});
+  const payload='工作台同步：'+JSON.stringify({materials:mats(),projects:projs(),trash:trash()});
   if(window.hermes&&window.hermes.send){window.hermes.send(payload);toast('已发送给 Hermes');}
   else navigator.clipboard.writeText(payload).then(()=>toast('已复制，马上粘贴发给 Hermes')).catch(()=>toast('复制失败，请手动操作'));
   D.sent=true;localStorage.setItem('wt-draft',JSON.stringify(D));renderHome();
@@ -169,11 +182,15 @@ function sendDraft(){
 
 // ---- 首页 ----
 function renderHome(){
-  const P=projs(),M=mats();
+  const P=projs(),M=mats(),T=trash();
   const scr=P.filter(p=>p.status==='script'),shot=P.filter(p=>p.status==='shot');
   document.getElementById('c1').textContent=scr.length+' 个';
   document.getElementById('c2').textContent=shot.length+' 个';
+  document.getElementById('c3').textContent=T.length+' 个';
   document.getElementById('cm').textContent=M.length+' 项';
+  document.getElementById('tbw').innerHTML=T.length?' <button class="mini del" id="tb">🗑 清空垃圾箱</button>':'';
+  if(T.length)document.getElementById('tb').onclick=()=>{if(confirm('清空垃圾箱？'+T.length+' 个选题将彻底删除，无法恢复。')){
+    ensureDraft();trash().length=0;saveDraft();renderHome();}};
   const eb=document.getElementById('editbtn');
   if(eb){eb.textContent=editing?'✔ 完成编辑':'✎ 编辑';eb.onclick=()=>{editing=!editing;renderHome();};}
   document.getElementById('matadd').style.display=editing?'':'none';
@@ -190,24 +207,37 @@ function renderHome(){
     editing
     ?`<div class="matrow"><a href="${esc(m[1])}" onclick="return false" style="color:#6b7280">${esc(m[0])}</a><button class="mini del" data-mdel="${i}">✕</button></div>`
     :`<a href="${esc(m[1])}">${esc(m[0])}</a>`).join(''):'<div class="empty">还没有素材，点右上「✎ 编辑」添加</div>');
+  const fgbtns=p=>`<span class="lbl">🚩</span>`+['g','b','y'].map(c=>
+    `<button class="mini fg${p.flag===c?' on':''}" data-fg="${esc(p.id)}:${c}"><span class="dot ${c}"></span></button>`).join('');
   const row=(p,meta)=>editing
-    ?`<div class="item"><span class="t">${esc(p.title)}</span><span class="m">${meta(p)}</span></div>
-      <div class="rowacts"><button class="mini" data-ren="${esc(p.id)}">✎ 改名</button>
+    ?`<div class="item">${flagDot(p)}<span class="t">${esc(p.title)}</span><span class="m">${meta(p)}</span></div>
+      <div class="rowacts">${fgbtns(p)}<button class="mini" data-ren="${esc(p.id)}">✎ 改名</button>
       <button class="mini" data-mov="${esc(p.id)}">${p.status==='script'?'➜ 移到已拍':'➜ 移回待拍'}</button>
       <button class="mini del" data-del="${esc(p.id)}">✕ 删除</button></div>`
-    :`<a class="item" href="#/p/${esc(p.id)}"><span class="t">${esc(p.title)}</span><span class="m">${meta(p)}</span></a>`;
+    :`<a class="item" href="#/p/${esc(p.id)}">${flagDot(p)}<span class="t">${esc(p.title)}</span><span class="m">${meta(p)}</span></a>`;
   document.getElementById('l1').innerHTML=scr.length?scr.map(p=>row(p,x=>STAGELB(x.stage))).join(''):'<div class="empty">还没有，「开始创作」建档后出现在这里</div>';
   document.getElementById('l2').innerHTML=shot.length?shot.map(p=>row(p,x=>'已拍摄 '+(esc(x.shotdate)||''))).join(''):'<div class="empty">还没有，拍摄完成的项目会移到这里</div>';
+  document.getElementById('l3').innerHTML=T.length?T.map(p=>
+    `<div class="item">${flagDot(p)}<span class="t" style="color:#6b7280">${esc(p.title)}</span><span class="m">删除于 ${esc(p.trashdate||'')}</span></div>
+     <div class="rowacts"><button class="mini" data-res="${esc(p.id)}">↩ 恢复到「${p.status==='shot'?'已拍':'待拍'}」</button></div>`).join('')
+    :'<div class="empty">垃圾箱是空的。删除的选题会先进这里，可随时恢复。</div>';
   document.getElementById('homefoot').innerHTML=editing
-    ?'编辑模式：改完点顶部「📤 同步给 Hermes」，我写入档案并发布。<b>同步发送前别关页面、别清缓存。</b>'
-    :'待拍脚本＝创作完成、还没拍摄；已拍作品＝已拍摄完成。点项目进四步进度页。点右上「✎ 编辑」可增删改素材和项目。';
+    ?'编辑模式：改完点顶部「📤 同步给 Hermes」，我写入档案并发布。<b>同步发送前别关页面、别清缓存。</b> 🚩点颜色设优先级，再点同色取消；✕删除＝进垃圾箱（可恢复）。'
+    :'待拍脚本＝创作完成、还没拍摄；已拍作品＝已拍摄完成；小圆点＝优先级旗标。点项目进四步进度页，点右上「✎ 编辑」增删改素材和选题。';
   document.querySelectorAll('[data-mdel]').forEach(b=>b.onclick=()=>{ensureDraft();mats().splice(+b.dataset.mdel,1);saveDraft();renderHome();});
-  document.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{ensureDraft();const p=projs().find(x=>x.id===b.dataset.del);if(p&&confirm('删除《'+p.title+'》？')){projs().splice(projs().indexOf(p),1);saveDraft();renderHome();}});
+  document.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{ensureDraft();const p=projs().find(x=>x.id===b.dataset.del);
+    if(p&&confirm('删除《'+p.title+'》？（进选题垃圾箱，可恢复）')){projs().splice(projs().indexOf(p),1);p.trashdate=today();trash().unshift(p);saveDraft();renderHome();}});
   document.querySelectorAll('[data-ren]').forEach(b=>b.onclick=()=>{ensureDraft();const p=projs().find(x=>x.id===b.dataset.ren);const t=prompt('新标题：',p.title);if(t&&t.trim()){p.title=t.trim();saveDraft();renderHome();}});
   document.querySelectorAll('[data-mov]').forEach(b=>b.onclick=()=>{ensureDraft();const p=projs().find(x=>x.id===b.dataset.mov);
     p.status=p.status==='script'?'shot':'script';
     if(p.status==='shot')p.shotdate=today();else delete p.shotdate;
     saveDraft();renderHome();});
+  document.querySelectorAll('[data-fg]').forEach(b=>b.onclick=()=>{ensureDraft();
+    const s=b.dataset.fg,i=s.lastIndexOf(':'),p=projs().find(x=>x.id===s.slice(0,i)),c=s.slice(i+1);
+    if(p){if(p.flag===c)delete p.flag;else p.flag=c;saveDraft();renderHome();}});
+  document.querySelectorAll('[data-res]').forEach(b=>b.onclick=()=>{ensureDraft();
+    const p=trash().find(x=>x.id===b.dataset.res);
+    if(p){trash().splice(trash().indexOf(p),1);delete p.trashdate;projs().unshift(p);saveDraft();renderHome();toast('已恢复');}});
 }
 document.getElementById('nb').onclick=()=>{
   const t=document.getElementById('nt').value.trim();
