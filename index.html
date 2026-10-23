@@ -6,7 +6,7 @@
 <title>创作工作台</title>
 <!-- 公网地址: https://alanlyp.github.io/workbench/  更新流程: 改完本文件后执行
      cp 本文件 ~/Desktop/opencode/workbench-pages/index.html && cd ~/Desktop/opencode/workbench-pages && git add -A && git commit -m "update" && git push
-     约1分钟生效。file://素材链接仅本机有效。 -->
+     约1分钟生效。file://素材链接仅本机有效。Hermes 每次改源数据把 REV+1（用于清用户端已同步草稿）。 -->
 <style>
   *{box-sizing:border-box}
   body{margin:0;background:#f4f4f6;color:#17171a;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Segoe UI",sans-serif;line-height:1.55}
@@ -19,19 +19,26 @@
   .card h3 .cnt{font-size:12px;color:#6b7280;font-weight:400;margin-left:6px}
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   .grid .card{margin-bottom:0}
-  @media (max-width:600px){.grid{grid-template-columns:1fr}}
   input[type=text]{width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:14px;margin-bottom:8px}
   button{font-size:13px;padding:6px 16px;border-radius:8px;border:1px solid #2f6fed;background:#2f6fed;color:#fff;cursor:pointer}
   button:hover{background:#1e54cc}
   button.ghost{background:#fff;color:#2f6fed}
   button.ghost:hover{background:#eef4ff}
+  .mini{width:auto;font-size:12px;padding:3px 9px;border-radius:6px;border:1px solid #ddd;background:#fff;color:#555}
+  .mini:hover{background:#f0f0f2;color:#17171a}
+  .mini.del{color:#dc2626;border-color:#fecaca}
+  .banner .send{background:#2f6fed;color:#fff;border-color:#2f6fed;padding:7px 14px;font-size:13px;width:auto}
   .links a{display:block;font-size:13px;color:#2f6fed;text-decoration:none;padding:3px 0}
   .links a:hover{text-decoration:underline}
-  .plist a.item{display:flex;gap:10px;align-items:center;padding:9px 10px;border:1px solid #e8e8ec;border-radius:10px;margin-bottom:8px;text-decoration:none;color:#17171a;background:#fafafa}
+  .matrow{display:flex;gap:8px;align-items:center;justify-content:space-between}
+  .matrow a{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .plist a.item,.plist div.item{display:flex;gap:10px;align-items:center;padding:9px 10px;border:1px solid #e8e8ec;border-radius:10px;margin-bottom:8px;background:#fafafa;text-decoration:none;color:#17171a}
   .plist a.item:hover{border-color:#2f6fed}
-  .plist .t{font-size:14px;font-weight:600}
+  .plist .t{font-size:14px;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis}
   .plist .m{font-size:12px;color:#6b7280;margin-left:auto;white-space:nowrap}
+  .rowacts{display:flex;gap:6px;margin:-2px 0 8px;flex-wrap:wrap}
   .empty{font-size:13px;color:#999;padding:6px 2px}
+  .banner{border:1px solid #f59e0b;background:#fffbeb;border-radius:10px;padding:10px 12px;font-size:13px;margin-bottom:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
   .now{border:1px solid #2f6fed;background:#eef4ff;border-radius:10px;padding:10px 14px;font-size:14px;margin-bottom:14px}
   .now b{color:#2f6fed}
   .back{font-size:13px;color:#2f6fed;cursor:pointer;display:inline-block;margin-bottom:10px}
@@ -50,7 +57,7 @@
   .desc{font-size:13px;color:#444;margin-top:5px}
   .acts{margin-top:9px}
   .foot{font-size:12px;color:#999;margin-top:16px;border-top:1px solid #e4e4e9;padding-top:12px}
-  .toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%);background:#17171a;color:#fff;font-size:13px;padding:8px 18px;border-radius:8px;opacity:0;transition:opacity .2s;pointer-events:none}
+  .toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%);background:#17171a;color:#fff;font-size:13px;padding:8px 18px;border-radius:8px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:92%;text-align:center}
   .toast.show{opacity:1}
   /* 手机端 H5：放在样式表末尾保证覆盖桌面规则 */
   @media (max-width:600px){
@@ -60,7 +67,8 @@
     .card{padding:12px 13px}
     input[type=text]{font-size:16px;padding:11px 12px}
     button{width:100%;padding:12px 16px;font-size:15px}
-    .plist a.item{flex-wrap:wrap;gap:2px 8px;padding:10px}
+    .mini,.banner .send{width:auto;padding:9px 13px;font-size:14px}
+    .plist a.item,.plist div.item{flex-wrap:wrap;gap:2px 8px;padding:10px}
     .plist .m{margin-left:0;width:100%}
     .plist .t{font-size:15px}
     .step{padding:12px 13px}
@@ -76,19 +84,22 @@
   <div class="sub">四步法：AI调研 → 搭框架 → 注入故事(你) → 润色 · 每步完成后 Hermes 更新本页，浏览器 ⌘R 刷新</div>
 
   <div id="view-home">
+    <div id="banner"></div>
+
     <div class="grid">
       <div class="card">
         <h3>▶ 开始创作</h3>
         <input type="text" id="nt" placeholder="新创意，例如：车墩白天与夜晚">
         <button id="nb">✨ 创建新项目</button>
-        <div class="empty" style="margin-top:6px">复制指令发回 Hermes 聊天框，Hermes 建档并开工</div>
+        <div class="empty" style="margin-top:6px">创建后进「待拍脚本」，改完点顶部「📤 同步」发给 Hermes 归档</div>
       </div>
       <div class="card">
-        <h3>📚 素材库</h3>
-        <div class="links">
-          <a href="file:///Users/liuyiping/Desktop/Alan-Database/口播稿/">📁 口播稿总目录</a>
-          <a href="file:///Users/liuyiping/Desktop/opencode/转录原稿/">📁 转录原稿</a>
-          <a href="file:///Users/liuyiping/Desktop/opencode/转录原稿/2026-10-23-BV1z3SiBsEig-AI爆款文案四步法-转录与拆解.md">📄 四步法参考视频拆解</a>
+        <h3>📚 素材库<span class="cnt" id="cm"></span></h3>
+        <div class="links" id="mat"></div>
+        <div id="matadd" style="display:none">
+          <input type="text" id="mn" placeholder="素材名称，例如：爆款拆解脚本">
+          <input type="text" id="ml" placeholder="链接（https:// 或 file:///）">
+          <button class="ghost" id="mb">＋ 添加素材</button>
         </div>
       </div>
     </div>
@@ -103,15 +114,22 @@
       <div class="plist" id="l2"></div>
     </div>
 
-    <div class="foot">待拍脚本＝创作完成、还没拍摄的项目；已拍作品＝已拍摄完成的项目。点项目进入四步进度页。</div>
+    <div class="foot" id="homefoot"></div>
   </div>
 
   <div id="view-proj" style="display:none"></div>
 </div>
 <div class="toast" id="toast"></div>
 <script>
-// ponytail: 数据就是本文件里的 PROJECTS 数组，Hermes 直接改；无后端，够用到需要多端同步为止
-// XSS说明：PROJECTS 由 Hermes 手工维护在本文件内（非运行时用户输入），渲染时仍统一过 esc() 转义
+// ponytail: 线上真身=本文件 REV/MATERIALS/PROJECTS；页面编辑存 localStorage 草稿，
+// 点「同步」把 JSON 发回 Hermes → Hermes 写入源文件、REV+1、push。无后端，够用到需要多端直写为止。
+// XSS说明：渲染数据统一过 esc() 转义；banner/foot 的 innerHTML 只拼常量与数字（D.n 强制转 Number）。
+const REV=1;
+const MATERIALS=[
+  ['📁 口播稿总目录','file:///Users/liuyiping/Desktop/Alan-Database/口播稿/'],
+  ['📁 转录原稿','file:///Users/liuyiping/Desktop/opencode/转录原稿/'],
+  ['📄 四步法参考视频拆解','file:///Users/liuyiping/Desktop/opencode/转录原稿/2026-10-23-BV1z3SiBsEig-AI爆款文案四步法-转录与拆解.md']
+];
 const PROJECTS=[
   {id:'chedun',title:'车墩：白天一座空城，夜晚挤满人',date:'2026-10-23',status:'script',stage:0,
    extra:[['素材库(车墩v1)','file:///Users/liuyiping/Desktop/Alan-Database/口播稿/07-城市烟火气/2026-10-23-车墩-白天的安静与夜晚的烟火气.md'],
@@ -125,21 +143,91 @@ const STEPS=[
 ];
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const LB={todo:'未开始',doing:'进行中',done:'✅ 完成'};
-function toast(t){const e=document.getElementById('toast');e.textContent=t;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),1900);}
-function copy(c){if(window.hermes&&window.hermes.send){window.hermes.send(c);return;}
-  navigator.clipboard.writeText(c).then(()=>toast('已复制，粘贴回 Hermes 聊天框发送'));}
+const today=()=>new Date().toISOString().slice(0,10);
+function toast(t){const e=document.getElementById('toast');e.textContent=t;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),2200);}
 const STAGELB=s=>s===0?'未启动':s>=5?'文稿定稿 ✅':'Step '+s+' 进行中';
 
+// ---- 用户端草稿（localStorage）----
+let D=null;
+try{D=JSON.parse(localStorage.getItem('wt-draft')||'null');
+  if(D){D.n=(+D.n)||0;
+    if(D.sent&&D.baseline<REV){localStorage.removeItem('wt-draft');D=null;}}}catch(e){D=null;}
+let editing=false;
+const mats=()=>D?D.materials:MATERIALS;
+const projs=()=>D?D.projects:PROJECTS;
+function ensureDraft(){if(!D){D={n:0,baseline:REV,sent:false,
+  materials:JSON.parse(JSON.stringify(MATERIALS)),projects:JSON.parse(JSON.stringify(PROJECTS))};
+  localStorage.setItem('wt-draft',JSON.stringify(D));}}
+function saveDraft(){D={n:(D?D.n:0)+1,baseline:D?D.baseline:REV,sent:false,materials:mats(),projects:projs()};
+  localStorage.setItem('wt-draft',JSON.stringify(D));}
+function sendDraft(){
+  const payload='工作台同步：'+JSON.stringify({materials:mats(),projects:projs()});
+  if(window.hermes&&window.hermes.send){window.hermes.send(payload);toast('已发送给 Hermes');}
+  else navigator.clipboard.writeText(payload).then(()=>toast('已复制，马上粘贴发给 Hermes')).catch(()=>toast('复制失败，请手动操作'));
+  D.sent=true;localStorage.setItem('wt-draft',JSON.stringify(D));renderHome();
+}
+
+// ---- 首页 ----
 function renderHome(){
-  const scr=PROJECTS.filter(p=>p.status==='script'),shot=PROJECTS.filter(p=>p.status==='shot');
+  const P=projs(),M=mats();
+  const scr=P.filter(p=>p.status==='script'),shot=P.filter(p=>p.status==='shot');
   document.getElementById('c1').textContent=scr.length+' 个';
   document.getElementById('c2').textContent=shot.length+' 个';
-  const row=(p,meta)=>`<a class="item" href="#/p/${esc(p.id)}"><span class="t">${esc(p.title)}</span><span class="m">${meta(p)}</span></a>`;
+  document.getElementById('cm').textContent=M.length+' 项';
+  const eb=document.getElementById('editbtn');
+  if(eb){eb.textContent=editing?'✔ 完成编辑':'✎ 编辑';eb.onclick=()=>{editing=!editing;renderHome();};}
+  document.getElementById('matadd').style.display=editing?'':'none';
+  document.getElementById('banner').innerHTML=(D&&D.n>0)
+    ?`<div class="banner">📝 有 ${D.n} 项修改${D.sent?'（已复制，记得粘贴发送）':'待同步'}`
+      +(D.sent?'<button class="mini" id="bs2">📤 再次同步</button>':'<button class="mini send" id="bs">📤 同步给 Hermes</button><button class="mini del" id="bd">放弃修改</button>')+'</div>'
+    :'';
+  if(D&&D.n>0){
+    if(D.sent)document.getElementById('bs2').onclick=sendDraft;
+    else{document.getElementById('bs').onclick=sendDraft;
+      document.getElementById('bd').onclick=()=>{if(confirm('放弃全部修改，恢复线上版本？')){localStorage.removeItem('wt-draft');location.reload();}};}
+  }
+  document.getElementById('mat').innerHTML=(M.length?M.map((m,i)=>
+    editing
+    ?`<div class="matrow"><a href="${esc(m[1])}" onclick="return false" style="color:#6b7280">${esc(m[0])}</a><button class="mini del" data-mdel="${i}">✕</button></div>`
+    :`<a href="${esc(m[1])}">${esc(m[0])}</a>`).join(''):'<div class="empty">还没有素材，点右上「✎ 编辑」添加</div>');
+  const row=(p,meta)=>editing
+    ?`<div class="item"><span class="t">${esc(p.title)}</span><span class="m">${meta(p)}</span></div>
+      <div class="rowacts"><button class="mini" data-ren="${esc(p.id)}">✎ 改名</button>
+      <button class="mini" data-mov="${esc(p.id)}">${p.status==='script'?'➜ 移到已拍':'➜ 移回待拍'}</button>
+      <button class="mini del" data-del="${esc(p.id)}">✕ 删除</button></div>`
+    :`<a class="item" href="#/p/${esc(p.id)}"><span class="t">${esc(p.title)}</span><span class="m">${meta(p)}</span></a>`;
   document.getElementById('l1').innerHTML=scr.length?scr.map(p=>row(p,x=>STAGELB(x.stage))).join(''):'<div class="empty">还没有，「开始创作」建档后出现在这里</div>';
   document.getElementById('l2').innerHTML=shot.length?shot.map(p=>row(p,x=>'已拍摄 '+(esc(x.shotdate)||''))).join(''):'<div class="empty">还没有，拍摄完成的项目会移到这里</div>';
+  document.getElementById('homefoot').innerHTML=editing
+    ?'编辑模式：改完点顶部「📤 同步给 Hermes」，我写入档案并发布。<b>同步发送前别关页面、别清缓存。</b>'
+    :'待拍脚本＝创作完成、还没拍摄；已拍作品＝已拍摄完成。点项目进四步进度页。点右上「✎ 编辑」可增删改素材和项目。';
+  document.querySelectorAll('[data-mdel]').forEach(b=>b.onclick=()=>{ensureDraft();mats().splice(+b.dataset.mdel,1);saveDraft();renderHome();});
+  document.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{ensureDraft();const p=projs().find(x=>x.id===b.dataset.del);if(p&&confirm('删除《'+p.title+'》？')){projs().splice(projs().indexOf(p),1);saveDraft();renderHome();}});
+  document.querySelectorAll('[data-ren]').forEach(b=>b.onclick=()=>{ensureDraft();const p=projs().find(x=>x.id===b.dataset.ren);const t=prompt('新标题：',p.title);if(t&&t.trim()){p.title=t.trim();saveDraft();renderHome();}});
+  document.querySelectorAll('[data-mov]').forEach(b=>b.onclick=()=>{ensureDraft();const p=projs().find(x=>x.id===b.dataset.mov);
+    p.status=p.status==='script'?'shot':'script';
+    if(p.status==='shot')p.shotdate=today();else delete p.shotdate;
+    saveDraft();renderHome();});
 }
+document.getElementById('nb').onclick=()=>{
+  const t=document.getElementById('nt').value.trim();
+  if(!t){toast('先填个创意名字');return;}
+  ensureDraft();
+  projs().unshift({id:'p'+Date.now().toString(36),title:t,date:today(),status:'script',stage:0,extra:[]});
+  document.getElementById('nt').value='';
+  saveDraft();renderHome();toast('已创建，记得顶部「同步」发给 Hermes');
+};
+document.getElementById('mb').onclick=()=>{
+  const n=document.getElementById('mn').value.trim(),l=document.getElementById('ml').value.trim();
+  if(!n||!l){toast('名称和链接都要填');return;}
+  ensureDraft();
+  mats().push([n,l]);document.getElementById('mn').value='';document.getElementById('ml').value='';
+  saveDraft();renderHome();
+};
+
+// ---- 项目进度页 ----
 function renderProj(id){
-  const p=PROJECTS.find(x=>x.id===id);if(!p){location.hash='';return;}
+  const p=projs().find(x=>x.id===id);if(!p){location.hash='';return;}
   const doneN=Math.max(Math.min(p.stage-1,4),0),pct=Math.min(p.stage-1,4)/4*100;
   const steps=STEPS.map((s,i)=>{
     const n=i+1;
@@ -163,21 +251,18 @@ function renderProj(id){
     <div class="bartxt">进度 ${doneN}/4${links?` ｜ ${links}`:''}</div>
     ${steps}${shotBtn}
     <div class="foot">完成按钮把指令复制到剪贴板，粘贴回 Hermes 发送；Hermes 更新本页后 ⌘R 刷新。</div>`;
-  document.getElementById('view-proj').querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>copy(b.dataset.c));
+  document.getElementById('view-proj').querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{
+    if(window.hermes&&window.hermes.send){window.hermes.send(b.dataset.c);return;}
+    navigator.clipboard.writeText(b.dataset.c).then(()=>toast('已复制，粘贴回 Hermes 聊天框发送'));});
 }
 function route(){
   const h=location.hash;
   const isP=h.startsWith('#/p/');
   document.getElementById('view-home').style.display=isP?'none':'';
   document.getElementById('view-proj').style.display=isP?'':'none';
-  document.getElementById('apph').textContent=isP?'🎬 项目进度':'🗂 创作工作台';
+  document.getElementById('apph').innerHTML=isP?'🎬 项目进度':'🗂 创作工作台 <button class="mini" id="editbtn">✎ 编辑</button>';
   if(isP)renderProj(h.slice(4));else renderHome();
 }
-document.getElementById('nb').onclick=()=>{
-  const t=document.getElementById('nt').value.trim();
-  if(!t){toast('先填个创意名字');return;}
-  copy('工作台：新建创作项目《'+t+'》');
-};
 addEventListener('hashchange',route);route();
 </script>
 </body>
