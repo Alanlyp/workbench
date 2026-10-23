@@ -209,21 +209,23 @@ function renderHome(){
     :`<a href="${esc(m[1])}">${esc(m[0])}</a>`).join(''):'<div class="empty">还没有素材，点右上「✎ 编辑」添加</div>');
   const fgbtns=p=>`<span class="lbl">🚩</span>`+['g','b','y'].map(c=>
     `<button class="mini fg${p.flag===c?' on':''}" data-fg="${esc(p.id)}:${c}"><span class="dot ${c}"></span></button>`).join('');
-  const row=(p,meta)=>editing
+  const delBtn=p=>`<button class="mini del" data-del="${esc(p.id)}">✕ 删除</button>`;
+  // always=true（待拍脚本）：旗子和删除常驻，不依赖编辑模式；已拍作品只在编辑模式出操作
+  const row=(p,meta,always)=>editing
     ?`<div class="item">${flagDot(p)}<span class="t">${esc(p.title)}</span><span class="m">${meta(p)}</span></div>
       <div class="rowacts">${fgbtns(p)}<button class="mini" data-ren="${esc(p.id)}">✎ 改名</button>
-      <button class="mini" data-mov="${esc(p.id)}">${p.status==='script'?'➜ 移到已拍':'➜ 移回待拍'}</button>
-      <button class="mini del" data-del="${esc(p.id)}">✕ 删除</button></div>`
-    :`<a class="item" href="#/p/${esc(p.id)}">${flagDot(p)}<span class="t">${esc(p.title)}</span><span class="m">${meta(p)}</span></a>`;
-  document.getElementById('l1').innerHTML=scr.length?scr.map(p=>row(p,x=>STAGELB(x.stage))).join(''):'<div class="empty">还没有，「开始创作」建档后出现在这里</div>';
-  document.getElementById('l2').innerHTML=shot.length?shot.map(p=>row(p,x=>'已拍摄 '+(esc(x.shotdate)||''))).join(''):'<div class="empty">还没有，拍摄完成的项目会移到这里</div>';
+      <button class="mini" data-mov="${esc(p.id)}">${p.status==='script'?'➜ 移到已拍':'➜ 移回待拍'}</button>${delBtn(p)}</div>`
+    :`<a class="item" href="#/p/${esc(p.id)}">${flagDot(p)}<span class="t">${esc(p.title)}</span><span class="m">${meta(p)}</span></a>`
+      +(always?`<div class="rowacts">${fgbtns(p)}${delBtn(p)}</div>`:'');
+  document.getElementById('l1').innerHTML=scr.length?scr.map(p=>row(p,x=>STAGELB(x.stage),true)).join(''):'<div class="empty">还没有，「开始创作」建档后出现在这里</div>';
+  document.getElementById('l2').innerHTML=shot.length?shot.map(p=>row(p,x=>'已拍摄 '+(esc(x.shotdate)||''),false)).join(''):'<div class="empty">还没有，拍摄完成的项目会移到这里</div>';
   document.getElementById('l3').innerHTML=T.length?T.map(p=>
     `<div class="item">${flagDot(p)}<span class="t" style="color:#6b7280">${esc(p.title)}</span><span class="m">删除于 ${esc(p.trashdate||'')}</span></div>
      <div class="rowacts"><button class="mini" data-res="${esc(p.id)}">↩ 恢复到「${p.status==='shot'?'已拍':'待拍'}」</button></div>`).join('')
     :'<div class="empty">垃圾箱是空的。删除的选题会先进这里，可随时恢复。</div>';
   document.getElementById('homefoot').innerHTML=editing
     ?'编辑模式：改完点顶部「📤 同步给 Hermes」，我写入档案并发布。<b>同步发送前别关页面、别清缓存。</b> 🚩点颜色设优先级，再点同色取消；✕删除＝进垃圾箱（可恢复）。'
-    :'待拍脚本＝创作完成、还没拍摄；已拍作品＝已拍摄完成；小圆点＝优先级旗标。点项目进四步进度页，点右上「✎ 编辑」增删改素材和选题。';
+    :'待拍脚本＝创作完成、还没拍摄 —— <b>标题下方直接点🚩颜色设优先级、✕删除（进垃圾箱可恢复）</b>，不用进编辑模式；已拍作品＝已拍摄完成。点项目标题进四步进度页；改名、移动、素材编辑用右上「✎ 编辑」。';
   document.querySelectorAll('[data-mdel]').forEach(b=>b.onclick=()=>{ensureDraft();mats().splice(+b.dataset.mdel,1);saveDraft();renderHome();});
   document.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{ensureDraft();const p=projs().find(x=>x.id===b.dataset.del);
     if(p&&confirm('删除《'+p.title+'》？（进选题垃圾箱，可恢复）')){projs().splice(projs().indexOf(p),1);p.trashdate=today();trash().unshift(p);saveDraft();renderHome();}});
