@@ -333,7 +333,13 @@ function renderProj(id){
   const shotBtn=p.status==='script'
     ?`<button class="ghost" style="margin-top:4px" data-c="${esc('工作台：《'+p.title+'》拍摄完成，移到已拍作品')}">🎬 拍摄完成，移入已拍作品</button>`
     :'<div class="now">🎬 已拍摄完成</div>';
-  const links=(p.extra||[]).map(l=>`<a href="${esc(l[1])}">${esc(l[0])}</a>`).join(' ｜ ');
+  // file:// 链接在 https 页面会被浏览器拦截 → 自动映射为 Pages 上的 /d/ 孪生地址（产出 md 需随发布拷入 d/）
+  const BASE=(location.origin&&location.origin.startsWith('http'))?location.origin:'https://alanlyp.github.io/workbench';
+  const links=(p.extra||[]).map(l=>{
+    const isF=String(l[1]).startsWith('file://');
+    const href=isF?BASE+'/d/'+encodeURIComponent(String(l[1]).split('/').pop()):String(l[1]);
+    return `<a href="${esc(href)}" target="_blank" rel="noopener"${isF?` title="${esc(l[1])}（本机路径）"`:''}>${esc(l[0])}${isF?' 🌐':''}</a>`;
+  }).join(' ｜ ');
   document.getElementById('view-proj').innerHTML=`
     <span class="back" onclick="location.hash=''">← 返回首页</span>
     <div class="now">📍 <b>${esc(p.title)}</b> — ${STAGELB(p.stage)}${p.status==='shot'?'（已拍）':''}</div>
