@@ -159,18 +159,20 @@ const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'
 // 网页→Hermes 通道（按顺序降级）：①App内直发 ②公网直连 relay（POST+轮询回执，不经飞书）③复制+跳飞书
 const FEISHU_APPLINK='https://applink.feishu.cn/client/chat/open?openChatId=oc_c276467b6605b359571c9ff0c1803a13';
 // ponytail 上限：RELAY 是 trycloudflare 临时隧道 URL，relay/cloudflared 重启后会变，变了要来这里更新；mini常驻后换命名隧道+launchd 自启
-const RELAY='https://definitions-affiliates-printer-aud.trycloudflare.com';
+const RELAY='https://intimate-providence-gibraltar-unlike.trycloudflare.com';
 function fallbackFeishu(text){
   navigator.clipboard.writeText(text).then(()=>{
     toast('直连失败→已复制并打开飞书，粘贴发送');
     window.open(FEISHU_APPLINK,'_blank');
   }).catch(()=>toast('复制失败，手动复制发到飞书工作台会话'));
 }
-function toHermes(text){
+function toHermes(text,tries){
   if(window.hermes&&window.hermes.send){window.hermes.send(text);toast('已直接发送给 Hermes');return;}
-  toast('已提交，Hermes 处理中…（通常几十秒）');
+  tries=tries||0;
+  toast(tries?('上个任务还在处理，'+45+'秒后自动重试（第'+tries+'次）'):'已提交，Hermes 处理中…（通常几十秒）');
   fetch(RELAY+'/submit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({payload:text})})
     .then(r=>r.json()).then(d=>{
+      if(!d.job&&/稍等|忙/.test(String(d.error||''))&&tries<4){setTimeout(()=>toHermes(text,tries+1),45000);return;}
       if(!d.job){fallbackFeishu(text);return;}
       const iv=setInterval(()=>fetch(RELAY+'/status?id='+d.job).then(r=>r.json()).then(s=>{
         if(s.status==='done'||s.status==='failed'){clearInterval(iv);
