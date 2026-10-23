@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>创作工作台</title>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#f4f4f6;color:#17171a;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Segoe UI",sans-serif;line-height:1.55}
+  .page{max-width:780px;margin:0 auto;padding:28px 20px 60px}
+  h1{font-size:22px;margin:0 0 4px}
+  .sub{font-size:13px;color:#6b7280;margin-bottom:16px}
+  .sub a{color:#2f6fed;text-decoration:none}
+  .card{border:1px solid #e2e2e6;background:#fff;border-radius:12px;padding:14px 16px;margin-bottom:12px}
+  .card h3{font-size:15px;margin:0 0 8px}
+  .card h3 .cnt{font-size:12px;color:#6b7280;font-weight:400;margin-left:6px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .grid .card{margin-bottom:0}
+  @media (max-width:600px){.grid{grid-template-columns:1fr}}
+  input[type=text]{width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:14px;margin-bottom:8px}
+  button{font-size:13px;padding:6px 16px;border-radius:8px;border:1px solid #2f6fed;background:#2f6fed;color:#fff;cursor:pointer}
+  button:hover{background:#1e54cc}
+  button.ghost{background:#fff;color:#2f6fed}
+  button.ghost:hover{background:#eef4ff}
+  .links a{display:block;font-size:13px;color:#2f6fed;text-decoration:none;padding:3px 0}
+  .links a:hover{text-decoration:underline}
+  .plist a.item{display:flex;gap:10px;align-items:center;padding:9px 10px;border:1px solid #e8e8ec;border-radius:10px;margin-bottom:8px;text-decoration:none;color:#17171a;background:#fafafa}
+  .plist a.item:hover{border-color:#2f6fed}
+  .plist .t{font-size:14px;font-weight:600}
+  .plist .m{font-size:12px;color:#6b7280;margin-left:auto;white-space:nowrap}
+  .empty{font-size:13px;color:#999;padding:6px 2px}
+  .now{border:1px solid #2f6fed;background:#eef4ff;border-radius:10px;padding:10px 14px;font-size:14px;margin-bottom:14px}
+  .now b{color:#2f6fed}
+  .back{font-size:13px;color:#2f6fed;cursor:pointer;display:inline-block;margin-bottom:10px}
+  .bar{height:8px;background:#e4e4e9;border-radius:4px;overflow:hidden;margin-bottom:6px}
+  .bar i{display:block;height:100%;background:#2f6fed;transition:width .3s}
+  .bartxt{font-size:12px;color:#6b7280;margin-bottom:12px}
+  .step{border:1px solid #e2e2e6;background:#fff;border-radius:12px;padding:13px 16px;margin-bottom:11px}
+  .step.doing{border-color:#2f6fed;box-shadow:0 1px 6px rgba(47,111,237,.12)}
+  .step.done{background:#fafafa}
+  .head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .no{font-weight:700;font-size:14px}
+  .who{font-size:12px;border:1px solid #ddd;border-radius:10px;padding:1px 8px;color:#555;background:#f7f7f9}
+  .st{margin-left:auto;font-size:13px;color:#6b7280}
+  .doing .st{color:#2f6fed;font-weight:600}
+  .done .st{color:#16a34a;font-weight:600}
+  .desc{font-size:13px;color:#444;margin-top:5px}
+  .acts{margin-top:9px}
+  .foot{font-size:12px;color:#999;margin-top:16px;border-top:1px solid #e4e4e9;padding-top:12px}
+  .toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%);background:#17171a;color:#fff;font-size:13px;padding:8px 18px;border-radius:8px;opacity:0;transition:opacity .2s;pointer-events:none}
+  .toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div class="page">
+  <h1 id="apph">🗂 创作工作台</h1>
+  <div class="sub">四步法：AI调研 → 搭框架 → 注入故事(你) → 润色 · 每步完成后 Hermes 更新本页，浏览器 ⌘R 刷新</div>
+
+  <div id="view-home">
+    <div class="grid">
+      <div class="card">
+        <h3>▶ 开始创作</h3>
+        <input type="text" id="nt" placeholder="新创意，例如：车墩白天与夜晚">
+        <button id="nb">✨ 创建新项目</button>
+        <div class="empty" style="margin-top:6px">复制指令发回 Hermes 聊天框，Hermes 建档并开工</div>
+      </div>
+      <div class="card">
+        <h3>📚 素材库</h3>
+        <div class="links">
+          <a href="file:///Users/liuyiping/Desktop/Alan-Database/口播稿/">📁 口播稿总目录</a>
+          <a href="file:///Users/liuyiping/Desktop/opencode/转录原稿/">📁 转录原稿</a>
+          <a href="file:///Users/liuyiping/Desktop/opencode/转录原稿/2026-10-23-BV1z3SiBsEig-AI爆款文案四步法-转录与拆解.md">📄 四步法参考视频拆解</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:12px">
+      <h3>📝 待拍脚本<span class="cnt" id="c1"></span></h3>
+      <div class="plist" id="l1"></div>
+    </div>
+
+    <div class="card">
+      <h3>🎬 已拍作品<span class="cnt" id="c2"></span></h3>
+      <div class="plist" id="l2"></div>
+    </div>
+
+    <div class="foot">待拍脚本＝创作完成、还没拍摄的项目；已拍作品＝已拍摄完成的项目。点项目进入四步进度页。</div>
+  </div>
+
+  <div id="view-proj" style="display:none"></div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+// ponytail: 数据就是本文件里的 PROJECTS 数组，Hermes 直接改；无后端，够用到需要多端同步为止
+// XSS说明：PROJECTS 由 Hermes 手工维护在本文件内（非运行时用户输入），渲染时仍统一过 esc() 转义
+const PROJECTS=[
+  {id:'chedun',title:'车墩：白天一座空城，夜晚挤满人',date:'2026-10-23',status:'script',stage:0,
+   extra:[['素材库(车墩v1)','file:///Users/liuyiping/Desktop/Alan-Database/口播稿/07-城市烟火气/2026-10-23-车墩-白天的安静与夜晚的烟火气.md'],
+          ['参考视频拆解','file:///Users/liuyiping/Desktop/opencode/转录原稿/2026-10-23-BV1z3SiBsEig-AI爆款文案四步法-转录与拆解.md']]}
+];
+const STEPS=[
+  ['Step 1 · AI调研','🤖 Hermes','痛点、钩子池、选题池≥10个'],
+  ['Step 2 · 搭框架','🤖 Hermes','Story框架分段大纲，段落级、不写正文'],
+  ['Step 3 · 注入故事','✍️ 你','踩点亲眼所见+你自己的经历视角'],
+  ['Step 4 · 润色定稿','🤖 Hermes','删车轱辘话、改口语、查错字、核时长']
+];
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const LB={todo:'未开始',doing:'进行中',done:'✅ 完成'};
+function toast(t){const e=document.getElementById('toast');e.textContent=t;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),1900);}
+function copy(c){if(window.hermes&&window.hermes.send){window.hermes.send(c);return;}
+  navigator.clipboard.writeText(c).then(()=>toast('已复制，粘贴回 Hermes 聊天框发送'));}
+const STAGELB=s=>s===0?'未启动':s>=5?'文稿定稿 ✅':'Step '+s+' 进行中';
+
+function renderHome(){
+  const scr=PROJECTS.filter(p=>p.status==='script'),shot=PROJECTS.filter(p=>p.status==='shot');
+  document.getElementById('c1').textContent=scr.length+' 个';
+  document.getElementById('c2').textContent=shot.length+' 个';
+  const row=(p,meta)=>`<a class="item" href="#/p/${esc(p.id)}"><span class="t">${esc(p.title)}</span><span class="m">${meta(p)}</span></a>`;
+  document.getElementById('l1').innerHTML=scr.length?scr.map(p=>row(p,x=>STAGELB(x.stage))).join(''):'<div class="empty">还没有，「开始创作」建档后出现在这里</div>';
+  document.getElementById('l2').innerHTML=shot.length?shot.map(p=>row(p,x=>'已拍摄 '+(esc(x.shotdate)||''))).join(''):'<div class="empty">还没有，拍摄完成的项目会移到这里</div>';
+}
+function renderProj(id){
+  const p=PROJECTS.find(x=>x.id===id);if(!p){location.hash='';return;}
+  const doneN=Math.max(Math.min(p.stage-1,4),0),pct=Math.min(p.stage-1,4)/4*100;
+  const steps=STEPS.map((s,i)=>{
+    const n=i+1;
+    const st=p.stage>=5?'done':p.stage===0?'todo':n<p.stage?'done':n===p.stage?'doing':'todo';
+    let acts='';
+    if(st==='doing')acts=`<button data-c="${esc('工作台：《'+p.title+'》完成 Step '+n+'，推进下一步')}">✅ 完成这步，进入 Step ${n+1}</button>`;
+    if(st==='todo'&&n===1&&p.stage===0)acts=`<button data-c="${esc('工作台：《'+p.title+'》开始 Step 1，做用户调研和钩子池')}">▶ 开始 Step 1</button>`;
+    if(st==='todo'&&p.stage>0&&n===p.stage+1)acts=`<button class="ghost" data-c="${esc('工作台：《'+p.title+'》开始 Step '+n)}">▶ 开始 Step ${n}</button>`;
+    return `<div class="step ${st==='done'?'done':st==='doing'?'doing':''}">
+      <div class="head"><span class="no">${s[0]}</span><span class="who">${s[1]}</span><span class="st">${LB[st]}</span></div>
+      <div class="desc">${s[2]}</div>${acts?`<div class="acts">${acts}</div>`:''}</div>`;
+  }).join('');
+  const shotBtn=p.status==='script'
+    ?`<button class="ghost" style="margin-top:4px" data-c="${esc('工作台：《'+p.title+'》拍摄完成，移到已拍作品')}">🎬 拍摄完成，移入已拍作品</button>`
+    :'<div class="now">🎬 已拍摄完成</div>';
+  const links=(p.extra||[]).map(l=>`<a href="${esc(l[1])}">${esc(l[0])}</a>`).join(' ｜ ');
+  document.getElementById('view-proj').innerHTML=`
+    <span class="back" onclick="location.hash=''">← 返回首页</span>
+    <div class="now">📍 <b>${esc(p.title)}</b> — ${STAGELB(p.stage)}${p.status==='shot'?'（已拍）':''}</div>
+    <div class="bar"><i style="width:${pct}%"></i></div>
+    <div class="bartxt">进度 ${doneN}/4${links?` ｜ ${links}`:''}</div>
+    ${steps}${shotBtn}
+    <div class="foot">完成按钮把指令复制到剪贴板，粘贴回 Hermes 发送；Hermes 更新本页后 ⌘R 刷新。</div>`;
+  document.getElementById('view-proj').querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>copy(b.dataset.c));
+}
+function route(){
+  const h=location.hash;
+  const isP=h.startsWith('#/p/');
+  document.getElementById('view-home').style.display=isP?'none':'';
+  document.getElementById('view-proj').style.display=isP?'':'none';
+  document.getElementById('apph').textContent=isP?'🎬 项目进度':'🗂 创作工作台';
+  if(isP)renderProj(h.slice(4));else renderHome();
+}
+document.getElementById('nb').onclick=()=>{
+  const t=document.getElementById('nt').value.trim();
+  if(!t){toast('先填个创意名字');return;}
+  copy('工作台：新建创作项目《'+t+'》');
+};
+addEventListener('hashchange',route);route();
+</script>
+</body>
+</html>
