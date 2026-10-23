@@ -177,8 +177,8 @@ function ensureDraft(){if(!D){D={n:0,baseline:REV,sent:false,
   localStorage.setItem('wt-draft',JSON.stringify(D));}}
 function saveDraft(){D={n:(D?D.n:0)+1,baseline:D?D.baseline:REV,sent:false,materials:mats(),projects:projs(),trash:trash()};
   localStorage.setItem('wt-draft',JSON.stringify(D));}
-function sendDraft(){
-  const payload='工作台同步：'+JSON.stringify({materials:mats(),projects:projs(),trash:trash()});
+function sendDraft(prefix){
+  const payload=(prefix||'工作台同步：')+JSON.stringify({materials:mats(),projects:projs(),trash:trash()});
   if(window.hermes&&window.hermes.send){window.hermes.send(payload);toast('已发送给 Hermes');}
   else navigator.clipboard.writeText(payload).then(()=>toast('已复制，马上粘贴发给 Hermes')).catch(()=>toast('复制失败，请手动操作'));
   D.sent=true;localStorage.setItem('wt-draft',JSON.stringify(D));route();
@@ -282,9 +282,12 @@ document.getElementById('mb').onclick=()=>{
 // ---- 项目进度页 ----
 function refreshGate(id){const p=projs().find(x=>x.id===id);if(!p)return;
   const has=!!(p.desc&&String(p.desc).trim());
-  const g0=document.getElementById('g0'),g1=document.getElementById('g1');
-  if(g0)g0.style.display=has?'none':'';
-  if(g1)g1.style.display=has?'':'none';}
+  const g0=document.getElementById('g0'),g1=document.getElementById('g1'),ps=document.getElementById('psub');
+  if(g0)g0.textContent=has
+    ?'📤 描述已写好——点上方「📤 提交想法给 Hermes」，我回复确认后这里出现 Step 1'
+    :'✏️ 先在上方「选题描述」写下你的想法，点「📤 提交想法给 Hermes」发给我，确认后解锁 Step 1';
+  if(g1)g1.style.display=p.descok?'':'none';
+  if(ps)ps.disabled=!has;}
 function renderProj(id){
   const p=projs().find(x=>x.id===id);if(!p){location.hash='';return;}
   renderBanner();
@@ -295,8 +298,9 @@ function renderProj(id){
     let acts='';
     if(st==='doing')acts=`<button data-c="${esc('工作台：《'+p.title+'》完成 Step '+n+'，推进下一步')}">✅ 完成这步，进入 Step ${n+1}</button>`;
     if(st==='todo'&&n===1&&p.stage===0)
-      acts=`<div id="g0" class="empty">✏️ 先在上方「选题描述」写下你的想法，保存并同步后才能开始 Step 1</div>
-        <div id="g1" style="display:none"><button data-c="${esc('工作台：《'+p.title+'》开始 Step 1，做用户调研和钩子池')}">▶ 开始 Step 1</button></div>`;
+      acts=p.descok
+        ?`<div id="g1"><button data-c="${esc('工作台：《'+p.title+'》开始 Step 1，做用户调研和钩子池')}">▶ 开始 Step 1</button></div>`
+        :`<div id="g0" class="empty"></div>`;
     if(st==='todo'&&p.stage>0&&n===p.stage+1)acts=`<button class="ghost" data-c="${esc('工作台：《'+p.title+'》开始 Step '+n)}">▶ 开始 Step ${n}</button>`;
     return `<div class="step ${st==='done'?'done':st==='doing'?'doing':''}">
       <div class="head"><span class="no">${s[0]}</span><span class="who">${s[1]}</span><span class="st">${LB[st]}</span></div>
@@ -311,14 +315,24 @@ function renderProj(id){
     <div class="now">📍 <b>${esc(p.title)}</b> — ${STAGELB(p.stage)}${p.status==='shot'?'（已拍）':''}</div>
     <div class="dtitle">✏️ 选题描述 · 你的想法（必填）</div>
     <textarea id="pdesc" placeholder="这个选题讲什么？为什么现在做？给谁看？你有什么独特角度、亲历故事或亲眼所见的素材？写得越具体，调研和框架越准……">${esc(p.desc||'')}</textarea>
-    <div class="dhint">写完<b>点框外或收起键盘</b>自动保存 → 页面顶部「📤 同步给 Hermes」发给我 → 解锁 Step 1</div>
+    <div class="dhint">写完点<b>「📤 提交想法给 Hermes」</b>直接发给我（点框外先自动保存到草稿）</div>
+    <button id="psub" class="ghost" style="margin-top:8px">📤 提交想法给 Hermes</button>
+    <div class="dhint" id="psubhint">提交＝把你的描述和当前所有修改一次性发给我；我回复「收到」后，下方 Step 1 才解锁。改了描述需要重新提交。</div>
     <div class="bar" style="margin-top:14px"><i style="width:${pct}%"></i></div>
     <div class="bartxt">进度 ${doneN}/4${links?` ｜ ${links}`:''}</div>
     ${steps}${shotBtn}
     <div class="foot">完成按钮把指令复制到剪贴板，粘贴回 Hermes 发送；Hermes 更新本页后 ⌘R 刷新。</div>`;
   document.getElementById('pdesc').onchange=e=>{ensureDraft();
     const pp=projs().find(x=>x.id===id);
-    if(pp){pp.desc=e.target.value;saveDraft();refreshGate(id);renderBanner();toast('描述已保存，记得顶部「📤 同步」');}};
+    if(pp){const was=pp.descok;pp.desc=e.target.value;if(was)delete pp.descok;
+      saveDraft();refreshGate(id);renderBanner();
+      toast(was?'描述已改，需要重新提交给 Hermes':'描述已保存到草稿，点「提交想法」发给我');}};
+  document.getElementById('psub').onclick=()=>{const pp=projs().find(x=>x.id===id);
+    const v=document.getElementById('pdesc').value;
+    if(!v.trim()){toast('先写想法再提交');return;}
+    ensureDraft();pp.desc=v;saveDraft();
+    sendDraft('工作台：《'+pp.title+'》提交选题描述｜');
+    toast('已提交，等 Hermes 回复「收到」后解锁 Step 1');};
   refreshGate(id);
   document.getElementById('view-proj').querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{
     if(window.hermes&&window.hermes.send){window.hermes.send(b.dataset.c);return;}
