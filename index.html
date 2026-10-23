@@ -206,8 +206,8 @@ function renderHome(){
     editing
     ?`<div class="matrow"><a href="${esc(m[1])}" onclick="return false" style="color:#6b7280">${esc(m[0])}</a><button class="mini del" data-mdel="${i}">✕</button></div>`
     :`<a href="${esc(m[1])}">${esc(m[0])}</a>`).join(''):'<div class="empty">还没有素材，点右上「✎ 编辑」添加</div>');
-  const fgSel=p=>`<select class="fgsel" data-fgs="${esc(p.id)}" title="优先级旗标"><option value="">⚪ 无</option>${['g','b','y'].map(c=>
-    `<option value="${c}"${p.flag===c?' selected':''}>${c==='g'?'🟢 绿':c==='b'?'🔵 蓝':'🟡 黄'}</option>`).join('')}</select>`;
+  const fgSel=p=>`<select class="fgsel" data-fgs="${esc(p.id)}" title="优先级旗标：⚪无 🟢绿 🔵蓝 🟡黄"><option value="">⚪</option>${['g','b','y'].map(c=>
+    `<option value="${c}"${p.flag===c?' selected':''}>${c==='g'?'🟢':c==='b'?'🔵':'🟡'}</option>`).join('')}</select>`;
   const delBtn=p=>`<button class="mini del" data-del="${esc(p.id)}" title="删除（进垃圾箱）">✕</button>`;
   const itemInner=(p,meta,withFg,withDel)=>
     (withFg?fgSel(p):flagDot(p))+`<span class="t">${esc(p.title)}</span><span class="m">${meta(p)}</span>`+(withDel?delBtn(p):'');
