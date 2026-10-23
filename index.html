@@ -138,14 +138,14 @@
 // ponytail: 线上真身=本文件 REV/MATERIALS/PROJECTS/TRASH；页面编辑存 localStorage 草稿，
 // 点「同步」把 JSON 发回 Hermes → Hermes 写入源文件、REV+1、push。无后端，够用到需要多端直写为止。
 // XSS说明：渲染数据统一过 esc() 转义；banner/foot 的 innerHTML 只拼常量与数字（D.n 强制转 Number）。
-const REV=7;
+const REV=8;
 const MATERIALS=[
   ["📁 口播稿总目录","file:///Users/liuyiping/Desktop/Alan-Database/口播稿/"],
   ["📁 转录原稿","file:///Users/liuyiping/Desktop/opencode/转录原稿/"],
   ["📄 四步法参考视频拆解","file:///Users/liuyiping/Desktop/opencode/转录原稿/2026-10-23-BV1z3SiBsEig-AI爆款文案四步法-转录与拆解.md"]
 ];
 const PROJECTS=[
-  {"id":"e2etest","title":"E2E管道测试-只推进状态-勿产出文件-删我","date":"2026-10-23","status":"script","stage":0,"extra":[],"desc":"管道测试占位","descok":true},
+  {"id":"e2etest","title":"E2E管道测试-只推进状态-勿产出文件-删我","date":"2026-10-23","status":"script","stage":1,"extra":[],"desc":"管道测试占位","descok":true},
   {"id":"pmvkrtzwf","title":"落寞的舞者","date":"2026-10-23","status":"script","stage":3,"extra":[["Step1调研与钩子池","file:///Users/liuyiping/Desktop/Alan-Database/口播稿/07-城市烟火气/2026-10-23-落寞的舞者-Step1调研与钩子池.md"],["Step2框架大纲","file:///Users/liuyiping/Desktop/Alan-Database/口播稿/07-城市烟火气/2026-10-23-落寞的舞者-Step2框架大纲.md"]],"desc":"我想采访90年代风靡的交谊舞的那批人，他们到现在大多都已经70-80岁了，他们以前都是在交谊舞场上的舞王，每天都会在晚上固定的广场去跳交谊舞，但现在因为年纪大了，所以逐渐没有人会选择他们跳舞，但还是坚持每天去，大多时候都是在旁边看，但从他们的眼中还是能看到希望和憧憬","descok":true},
   {"id":"chedun","title":"车墩：白天一座空城，夜晚挤满人","date":"2026-10-23","status":"script","stage":0,"extra":[["素材库(车墩v1)","file:///Users/liuyiping/Desktop/Alan-Database/口播稿/07-城市烟火气/2026-10-23-车墩-白天的安静与夜晚的烟火气.md"],["参考视频拆解","file:///Users/liuyiping/Desktop/opencode/转录原稿/2026-10-23-BV1z3SiBsEig-AI爆款文案四步法-转录与拆解.md"]],"flag":"g"}
 ];
