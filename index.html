@@ -27,11 +27,10 @@
   .mini{width:auto;font-size:12px;padding:3px 9px;border-radius:6px;border:1px solid #ddd;background:#fff;color:#555}
   .mini:hover{background:#f0f0f2;color:#17171a}
   .mini.del{color:#dc2626;border-color:#fecaca}
+  .fgsel{font-size:12px;padding:3px 4px;border:1px solid #ddd;border-radius:6px;background:#fff;color:#555;max-width:96px;cursor:pointer}
   .banner .send{background:#2f6fed;color:#fff;border-color:#2f6fed;padding:7px 14px;font-size:13px;width:auto}
   .dot{display:inline-block;width:12px;height:12px;border-radius:50%;flex:none}
   .dot.g{background:#22c55e}.dot.b{background:#3b82f6}.dot.y{background:#eab308}
-  .mini.fg{padding:5px 7px}
-  .mini.fg.on{border-color:#17171a;box-shadow:inset 0 0 0 1px #17171a}
   .links a{display:block;font-size:13px;color:#2f6fed;text-decoration:none;padding:3px 0}
   .links a:hover{text-decoration:underline}
   .matrow{display:flex;gap:8px;align-items:center;justify-content:space-between}
@@ -73,6 +72,7 @@
     input[type=text]{font-size:16px;padding:11px 12px}
     button{width:100%;padding:12px 16px;font-size:15px}
     .mini,.banner .send{width:auto;padding:9px 13px;font-size:14px}
+    .fgsel{font-size:15px;padding:8px 6px;max-width:120px}
     .plist a.item,.plist div.item{flex-wrap:wrap;gap:2px 8px;padding:10px}
     .plist .t{font-size:15px}
     .step{padding:12px 13px}
@@ -206,16 +206,16 @@ function renderHome(){
     editing
     ?`<div class="matrow"><a href="${esc(m[1])}" onclick="return false" style="color:#6b7280">${esc(m[0])}</a><button class="mini del" data-mdel="${i}">✕</button></div>`
     :`<a href="${esc(m[1])}">${esc(m[0])}</a>`).join(''):'<div class="empty">还没有素材，点右上「✎ 编辑」添加</div>');
-  const fgbtns=p=>`<span class="lbl">🚩</span>`+['g','b','y'].map(c=>
-    `<button class="mini fg${p.flag===c?' on':''}" data-fg="${esc(p.id)}:${c}"><span class="dot ${c}"></span></button>`).join('');
-  const delBtn=p=>`<button class="mini del" data-del="${esc(p.id)}">✕ 删除</button>`;
+  const fgSel=p=>`<select class="fgsel" data-fgs="${esc(p.id)}" title="优先级旗标"><option value="">⚪ 无</option>${['g','b','y'].map(c=>
+    `<option value="${c}"${p.flag===c?' selected':''}>${c==='g'?'🟢 绿':c==='b'?'🔵 蓝':'🟡 黄'}</option>`).join('')}</select>`;
+  const delBtn=p=>`<button class="mini del" data-del="${esc(p.id)}" title="删除（进垃圾箱）">✕</button>`;
   const itemInner=(p,meta,withFg,withDel)=>
-    (withFg?fgbtns(p):flagDot(p))+`<span class="t">${esc(p.title)}</span><span class="m">${meta(p)}</span>`+(withDel?delBtn(p):'');
-  // always=true（待拍脚本）：旗子在标题行左侧、删除在行末（状态旁）常驻；已拍作品仅编辑模式出操作
+    (withFg?fgSel(p):flagDot(p))+`<span class="t">${esc(p.title)}</span><span class="m">${meta(p)}</span>`+(withDel?delBtn(p):'');
+  // always=true（待拍脚本）：下拉选旗在标题行左侧、✕删除在行末（状态旁）常驻；已拍作品仅编辑模式出操作
   const row=(p,meta,always)=>{
     const inner=itemInner(p,meta,always,always);
     if(editing){
-      const ops=(always?'':fgbtns(p))
+      const ops=(always?'':fgSel(p))
         +`<button class="mini" data-ren="${esc(p.id)}">✎ 改名</button>
            <button class="mini" data-mov="${esc(p.id)}">${p.status==='script'?'➜ 移到已拍':'➜ 移回待拍'}</button>`
         +(always?'':delBtn(p));
@@ -231,10 +231,10 @@ function renderHome(){
      <div class="rowacts"><button class="mini" data-res="${esc(p.id)}">↩ 恢复到「${p.status==='shot'?'已拍':'待拍'}」</button></div>`).join('')
     :'<div class="empty">垃圾箱是空的。删除的选题会先进这里，可随时恢复。</div>';
   document.getElementById('homefoot').innerHTML=editing
-    ?'编辑模式：改完点顶部「📤 同步给 Hermes」，我写入档案并发布。<b>同步发送前别关页面、别清缓存。</b> 🚩点颜色设优先级，再点同色取消；✕删除＝进垃圾箱（可恢复）。'
-    :'待拍脚本＝创作完成、还没拍摄 —— <b>每行左边点🚩颜色设优先级，行末✕删除（每次弹确认，进垃圾箱可恢复）</b>，都在标题行上、不用编辑模式；已拍作品＝已拍摄完成。点标题行进四步进度页；改名、移动、素材编辑用右上「✎ 编辑」。';
+    ?'编辑模式：改完点顶部「📤 同步给 Hermes」，我写入档案并发布。<b>同步发送前别关页面、别清缓存。</b> 下拉框选旗标颜色（无/绿/蓝/黄）；✕删除＝进垃圾箱（可恢复）。'
+    :'待拍脚本＝创作完成、还没拍摄 —— <b>每行左边下拉框选旗标颜色，行末红色✕删除（每次弹确认，进垃圾箱可恢复）</b>，都在标题行上、不用编辑模式；已拍作品＝已拍摄完成。点标题行进四步进度页；改名、移动、素材编辑用右上「✎ 编辑」。';
   // 待拍行是 div（行内有按钮，不能套 a）：点行进项目页，点行内按钮不算
-  document.querySelectorAll('[data-go]').forEach(d=>d.onclick=e=>{if(e.target.closest('button'))return;
+  document.querySelectorAll('[data-go]').forEach(d=>d.onclick=e=>{if(e.target.closest('button,select'))return;
     location.hash='#/p/'+d.dataset.go;});
   document.querySelectorAll('[data-mdel]').forEach(b=>b.onclick=()=>{ensureDraft();mats().splice(+b.dataset.mdel,1);saveDraft();renderHome();});
   document.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{ensureDraft();const p=projs().find(x=>x.id===b.dataset.del);
@@ -244,9 +244,9 @@ function renderHome(){
     p.status=p.status==='script'?'shot':'script';
     if(p.status==='shot')p.shotdate=today();else delete p.shotdate;
     saveDraft();renderHome();});
-  document.querySelectorAll('[data-fg]').forEach(b=>b.onclick=()=>{ensureDraft();
-    const s=b.dataset.fg,i=s.lastIndexOf(':'),p=projs().find(x=>x.id===s.slice(0,i)),c=s.slice(i+1);
-    if(p){if(p.flag===c)delete p.flag;else p.flag=c;saveDraft();renderHome();}});
+  document.querySelectorAll('[data-fgs]').forEach(s=>s.onchange=()=>{ensureDraft();
+    const p=projs().find(x=>x.id===s.dataset.fgs);
+    if(p){if(s.value)p.flag=s.value;else delete p.flag;saveDraft();renderHome();}});
   document.querySelectorAll('[data-res]').forEach(b=>b.onclick=()=>{ensureDraft();
     const p=trash().find(x=>x.id===b.dataset.res);
     if(p){trash().splice(trash().indexOf(p),1);delete p.trashdate;projs().unshift(p);saveDraft();renderHome();toast('已恢复');}});
