@@ -74,7 +74,6 @@
     button{width:100%;padding:12px 16px;font-size:15px}
     .mini,.banner .send{width:auto;padding:9px 13px;font-size:14px}
     .plist a.item,.plist div.item{flex-wrap:wrap;gap:2px 8px;padding:10px}
-    .plist .m{margin-left:0;width:100%}
     .plist .t{font-size:15px}
     .step{padding:12px 13px}
     .no{font-size:15px}
@@ -210,13 +209,21 @@ function renderHome(){
   const fgbtns=p=>`<span class="lbl">🚩</span>`+['g','b','y'].map(c=>
     `<button class="mini fg${p.flag===c?' on':''}" data-fg="${esc(p.id)}:${c}"><span class="dot ${c}"></span></button>`).join('');
   const delBtn=p=>`<button class="mini del" data-del="${esc(p.id)}">✕ 删除</button>`;
-  // always=true（待拍脚本）：旗子和删除常驻，不依赖编辑模式；已拍作品只在编辑模式出操作
-  const row=(p,meta,always)=>editing
-    ?`<div class="item">${flagDot(p)}<span class="t">${esc(p.title)}</span><span class="m">${meta(p)}</span></div>
-      <div class="rowacts">${fgbtns(p)}<button class="mini" data-ren="${esc(p.id)}">✎ 改名</button>
-      <button class="mini" data-mov="${esc(p.id)}">${p.status==='script'?'➜ 移到已拍':'➜ 移回待拍'}</button>${delBtn(p)}</div>`
-    :`<a class="item" href="#/p/${esc(p.id)}">${flagDot(p)}<span class="t">${esc(p.title)}</span><span class="m">${meta(p)}</span></a>`
-      +(always?`<div class="rowacts">${fgbtns(p)}${delBtn(p)}</div>`:'');
+  const itemInner=(p,meta,withFg,withDel)=>
+    (withFg?fgbtns(p):flagDot(p))+`<span class="t">${esc(p.title)}</span><span class="m">${meta(p)}</span>`+(withDel?delBtn(p):'');
+  // always=true（待拍脚本）：旗子在标题行左侧、删除在行末（状态旁）常驻；已拍作品仅编辑模式出操作
+  const row=(p,meta,always)=>{
+    const inner=itemInner(p,meta,always,always);
+    if(editing){
+      const ops=(always?'':fgbtns(p))
+        +`<button class="mini" data-ren="${esc(p.id)}">✎ 改名</button>
+           <button class="mini" data-mov="${esc(p.id)}">${p.status==='script'?'➜ 移到已拍':'➜ 移回待拍'}</button>`
+        +(always?'':delBtn(p));
+      return `<div class="item">${inner}</div><div class="rowacts">${ops}</div>`;
+    }
+    if(always)return `<div class="item" data-go="${esc(p.id)}">${inner}</div>`;
+    return `<a class="item" href="#/p/${esc(p.id)}">${itemInner(p,meta,false,false)}</a>`;
+  };
   document.getElementById('l1').innerHTML=scr.length?scr.map(p=>row(p,x=>STAGELB(x.stage),true)).join(''):'<div class="empty">还没有，「开始创作」建档后出现在这里</div>';
   document.getElementById('l2').innerHTML=shot.length?shot.map(p=>row(p,x=>'已拍摄 '+(esc(x.shotdate)||''),false)).join(''):'<div class="empty">还没有，拍摄完成的项目会移到这里</div>';
   document.getElementById('l3').innerHTML=T.length?T.map(p=>
@@ -225,7 +232,10 @@ function renderHome(){
     :'<div class="empty">垃圾箱是空的。删除的选题会先进这里，可随时恢复。</div>';
   document.getElementById('homefoot').innerHTML=editing
     ?'编辑模式：改完点顶部「📤 同步给 Hermes」，我写入档案并发布。<b>同步发送前别关页面、别清缓存。</b> 🚩点颜色设优先级，再点同色取消；✕删除＝进垃圾箱（可恢复）。'
-    :'待拍脚本＝创作完成、还没拍摄 —— <b>标题下方直接点🚩颜色设优先级、✕删除（进垃圾箱可恢复）</b>，不用进编辑模式；已拍作品＝已拍摄完成。点项目标题进四步进度页；改名、移动、素材编辑用右上「✎ 编辑」。';
+    :'待拍脚本＝创作完成、还没拍摄 —— <b>每行左边点🚩颜色设优先级，行末✕删除（每次弹确认，进垃圾箱可恢复）</b>，都在标题行上、不用编辑模式；已拍作品＝已拍摄完成。点标题行进四步进度页；改名、移动、素材编辑用右上「✎ 编辑」。';
+  // 待拍行是 div（行内有按钮，不能套 a）：点行进项目页，点行内按钮不算
+  document.querySelectorAll('[data-go]').forEach(d=>d.onclick=e=>{if(e.target.closest('button'))return;
+    location.hash='#/p/'+d.dataset.go;});
   document.querySelectorAll('[data-mdel]').forEach(b=>b.onclick=()=>{ensureDraft();mats().splice(+b.dataset.mdel,1);saveDraft();renderHome();});
   document.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{ensureDraft();const p=projs().find(x=>x.id===b.dataset.del);
     if(p&&confirm('删除《'+p.title+'》？（进选题垃圾箱，可恢复）')){projs().splice(projs().indexOf(p),1);p.trashdate=today();trash().unshift(p);saveDraft();renderHome();}});
